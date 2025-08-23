@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   //     path: '/'
   //   })
   return NextResponse.json(
-    { message: "Logged in successfully" },
+    { message: "Logged in successfully", status: "SUCCESS" },
     { status: 200 }
   );
 }

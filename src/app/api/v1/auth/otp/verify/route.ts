@@ -30,9 +30,8 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  await db.otp.update({
+  await db.otp.delete({
     where: { id: otp.id },
-    data: { verified: true },
   });
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -46,6 +45,7 @@ export async function POST(req: Request) {
   return NextResponse.json(
     {
       message: "OTP verified successfully.",
+      status: "SUCCESS",
     },
     { status: 202 }
   );

@@ -1,4 +1,3 @@
-// middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 
@@ -15,41 +14,49 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const { pathname } = request.nextUrl;
 
-  const protectedRoutes = [
-    "/dashboard",
-    "/account",
-    "/admin",
-    "/api/protected",
-  ];
+  // 1. Prevent logged-in users from visiting login page
+  if (pathname === "/auth/login" || "/auth/signup") {
+    if (token) {
+      try {
+        return NextResponse.redirect(new URL("/account", request.url));
+      } catch {
+        // ❌ invalid token → clear it and allow login page
+        const res = NextResponse.next();
+        res.cookies.delete("token");
+        return res;
+      }
+    }
+    // no token → allow login page
+    return NextResponse.next();
+  }
+
+  // 2. Protect private routes
+  const protectedRoutes = ["/dashboard", "/account", "/admin", "/api"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
 
   if (isProtectedRoute) {
     if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/auth/login", request.url));
     }
 
     try {
-      const { isUserExist }: any = await jwt.verify(token, SECRET_KEY);
-      const userDetails = isUserExist as UserPayload;
-      if (isUserExist) {
-        const response = NextResponse.next();
+      const decoded = jwt.verify(token, SECRET_KEY) as UserPayload;
 
-        // Add user details to request headers for downstream use
-        response.headers.set("x-user-id", isUserExist?.id);
-        response.headers.set("x-user-email", isUserExist.email);
-        response.headers.set("x-user-role", isUserExist.role);
-        response.headers.set("x-user-name", isUserExist.name);
+      const response = NextResponse.next();
+      response.headers.set("x-user-id", decoded.id);
+      response.headers.set("x-user-email", decoded.email);
+      response.headers.set("x-user-role", decoded.role);
+      response.headers.set("x-user-name", decoded.name);
+      response.headers.set("x-user-data", JSON.stringify(decoded));
 
-        // You can also pass the entire user object as JSON
-        response.headers.set("x-user-data", JSON.stringify(isUserExist));
-
-        return response;
-      }
-    } catch (error) {
-      const response = NextResponse.redirect(new URL("/login", request.url));
-      response.cookies.delete("authToken");
+      return response;
+    } catch {
+      const response = NextResponse.redirect(
+        new URL("/auth/login", request.url)
+      );
+      response.cookies.delete("token");
       return response;
     }
   }
@@ -57,11 +64,13 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
+// 3. Matcher
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/profile/:path*",
+    "/account/:path*",
     "/admin/:path*",
     "/api/protected/:path*",
+    "/auth/:path*",
   ],
 };

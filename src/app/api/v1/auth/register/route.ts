@@ -10,10 +10,7 @@ export async function POST(req: Request) {
   const isValidFields = RegisterSchema.safeParse(body);
 
   if (isValidFields.error) {
-    return NextResponse.json(
-      { message: "Something went wrong" },
-      { status: 409 }
-    );
+    return NextResponse.json({ message: "Something went wrong" });
   }
 
   const { name, email, password } = body;
