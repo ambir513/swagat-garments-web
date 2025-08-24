@@ -37,9 +37,13 @@ export async function POST(req: Request) {
   }
   const SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
 
-  const token = jwt.sign({ isUserExist }, SECRET_KEY, {
-    expiresIn: "1d",
-  });
+  const token = jwt.sign(
+    { id: isUserExist.id, email: isUserExist.email, role: isUserExist.role },
+    SECRET_KEY,
+    {
+      expiresIn: "1d",
+    }
+  );
   (await cookieStore).set("token", token);
   //    cookieStore.set('token', token, {
   //     httpOnly: true,
