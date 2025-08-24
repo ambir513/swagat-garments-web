@@ -1,76 +1,52 @@
+import { jwtVerify } from "jose";
 import { NextRequest, NextResponse } from "next/server";
-import jwt from "jsonwebtoken";
 
 interface UserPayload {
   id: string;
-  name: string;
   email: string;
   role: string;
 }
 
-const SECRET_KEY = process.env.NEXT_PUBLIC_SECRET_KEY || "";
+function isUserPayload(payload: unknown): payload is UserPayload {
+  return (
+    typeof payload === "object" &&
+    payload !== null &&
+    "id" in payload &&
+    "email" in payload &&
+    "role" in payload &&
+    typeof (payload as any).id === "string" &&
+    typeof (payload as any).email === "string" &&
+    typeof (payload as any).role === "string"
+  );
+}
+
+const SECRET_KEY = new TextEncoder().encode(
+  process.env.NEXT_PUBLIC_SECRET_KEY || ""
+);
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
-  const { pathname } = request.nextUrl;
 
-  // 1. Prevent logged-in users from visiting login page
-  if (pathname === "/auth/login" || "/auth/signup") {
-    if (token) {
-      try {
-        return NextResponse.redirect(new URL("/account", request.url));
-      } catch {
-        // ❌ invalid token → clear it and allow login page
-        const res = NextResponse.next();
-        res.cookies.delete("token");
-        return res;
-      }
-    }
-    // no token → allow login page
-    return NextResponse.next();
+  if (!token) {
+    return NextResponse.json({ message: "Invalid token" }, { status: 401 });
   }
 
-  // 2. Protect private routes
-  const protectedRoutes = ["/dashboard", "/account", "/admin", "/api"];
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+  try {
+    const { payload } = await jwtVerify(token, SECRET_KEY);
 
-  if (isProtectedRoute) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/auth/login", request.url));
+    if (!isUserPayload(payload)) {
+      return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
     }
 
-    try {
-      const decoded = jwt.verify(token, SECRET_KEY) as UserPayload;
-
-      const response = NextResponse.next();
-      response.headers.set("x-user-id", decoded.id);
-      response.headers.set("x-user-email", decoded.email);
-      response.headers.set("x-user-role", decoded.role);
-      response.headers.set("x-user-name", decoded.name);
-      response.headers.set("x-user-data", JSON.stringify(decoded));
-
-      return response;
-    } catch {
-      const response = NextResponse.redirect(
-        new URL("/auth/login", request.url)
-      );
-      response.cookies.delete("token");
-      return response;
-    }
+    const response = NextResponse.next();
+    response.headers.set("x-user-data", JSON.stringify(payload));
+    return response;
+  } catch (err) {
+    console.error("JWT verification failed:", err);
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
-
-  return NextResponse.next();
 }
 
-// 3. Matcher
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/account/:path*",
-    "/admin/:path*",
-    "/api/protected/:path*",
-    "/auth/:path*",
-  ],
+  matcher: ["/api/v1/auth/me", "/api/v1/users/:path*"],
 };
