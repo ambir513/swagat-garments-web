@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ui/ThemeProvider";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "sonner";
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
@@ -27,8 +27,8 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Toaster position="top-center" reverseOrder={false} />
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
