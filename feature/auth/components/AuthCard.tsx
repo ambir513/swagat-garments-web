@@ -18,6 +18,7 @@ interface AuthCardProp {
   footerLabel: string;
   linkLabel: string;
   href: string;
+  isForPass: Boolean;
 }
 
 const AuthCard = ({
@@ -27,6 +28,7 @@ const AuthCard = ({
   linkLabel,
   footerLabel,
   href,
+  isForPass,
 }: AuthCardProp) => {
   return (
     <Card>
@@ -39,9 +41,25 @@ const AuthCard = ({
         <Separator />
         <p className="text-sm text-muted-foreground mt-4">
           {footerLabel}
-          <Link href={href} className="font-semibold text-neutral-900">
+          <Link
+            href={href}
+            className="underline text-neutral-900"
+            prefetch={false}
+          >
             {linkLabel}
-          </Link>
+          </Link>{" "}
+          {isForPass && (
+            <>
+              or{" "}
+              <Link
+                href={"/auth/forgot-password"}
+                prefetch={false}
+                className="underline text-neutral-900"
+              >
+                Reset Password
+              </Link>
+            </>
+          )}
         </p>
       </CardFooter>
     </Card>
