@@ -20,6 +20,7 @@ import Spinner from "@/components/ui/spinner";
 import useSign from "../hooks/useSign";
 import useLogin from "../hooks/useLogin";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const LoginForm = () => {
   const { login } = useLogin();
@@ -49,6 +50,7 @@ const LoginForm = () => {
         description="Welcome back! Please sign in to continue"
         footerLabel="Don’t have an account? "
         href="/auth/register"
+        isForPass={true}
         linkLabel="Register"
       >
         <main className="flex flex-col gap-y-3">
@@ -89,6 +91,7 @@ const LoginForm = () => {
                   </FormItem>
                 )}
               />
+
               {isLoading?.event === "login" && isLoading.load ? (
                 <Button type="submit" className="w-full" disabled>
                   <Spinner />
