@@ -2,9 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { OTPInput, SlotProps } from "input-otp";
+import { SlotProps } from "input-otp";
 import { useEffect, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -17,7 +16,6 @@ import { OtpVerfiySchema } from "../index";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import useVerify from "../hooks/useVerify";
 import { useRouter } from "next/navigation";
 import {
   Form,
@@ -37,8 +35,10 @@ function OtpDialogPass({ email }: { email: string }) {
   const { useSendCode } = useForgotPass();
   const [hasGuessed, setHasGuessed] = useState<undefined | boolean>(undefined);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const [timeLeft, setTimeLeft] = useState(60);
-  const [isLoading, setIsLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(100);
+  const [isLoading, setIsLoading] = useState({ load: false, event: "" });
+  const [otpValue, setOtpValue] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [show, setShow] = useState(false);
   const [canResend, setCanResend] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
@@ -54,7 +54,7 @@ function OtpDialogPass({ email }: { email: string }) {
 
   const handleResend = () => {
     setOtp(["", "", "", ""]);
-    setTimeLeft(60);
+    setTimeLeft(100);
     setCanResend(false);
     document.getElementById("otp-0")?.focus();
   };
@@ -80,21 +80,22 @@ function OtpDialogPass({ email }: { email: string }) {
   }, [hasGuessed, timeLeft]);
 
   async function onSubmit(values: z.infer<typeof OtpVerfiySchema>) {
-    setIsLoading((prev) => !prev);
+    setIsLoading({ load: true, event: "submit" });
     const response = await useVerify({
       email,
-      code: values.code || "",
-      newPassword: values.password || "",
+      code: otpValue,
+      newPassword: password,
     });
 
     if (response) {
-      setIsLoading((prev) => !prev);
+      setIsLoading({ load: false, event: "" });
       Route.push("/auth/login");
     } else {
-      setIsLoading((prev) => !prev);
+      setIsLoading({ load: false, event: "" });
+      setOtpValue("");
+      setPassword("");
       setHasGuessed(false);
     }
-    console.log(values);
   }
 
   return (
@@ -106,7 +107,7 @@ function OtpDialogPass({ email }: { email: string }) {
         <CardDescription className="text-center">
           {hasGuessed
             ? "Your code has been successfully verified."
-            : `Check your email and enter the 6 Digit code `}
+            : `Enter the 6 Digit code along with New password`}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -136,6 +137,12 @@ function OtpDialogPass({ email }: { email: string }) {
                           <Input
                             placeholder="XXXXXX"
                             {...field}
+                            value={otpValue.trim()}
+                            onChange={(e) => {
+                              setOtpValue(e.target.value);
+                              field.onChange(e.target.value.trim());
+                            }}
+                            ref={field.ref}
                             onFocus={() => setHasGuessed(undefined)}
                           />
                         </FormControl>
@@ -154,8 +161,14 @@ function OtpDialogPass({ email }: { email: string }) {
                             type={show ? "text" : "password"}
                             placeholder="XXXXXXXXXX"
                             {...field}
-                            onBlur={() => setShow((prev) => !prev)}
-                            onFocus={() => setShow((prev) => !prev)}
+                            value={password.trim()}
+                            onChange={(e) => {
+                              setPassword(e.target.value);
+                              field.onChange(e.target.value.trim());
+                            }}
+                            onBlur={() => setShow(false)}
+                            ref={field.ref}
+                            onFocus={() => setShow((prev) => true)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -163,10 +176,14 @@ function OtpDialogPass({ email }: { email: string }) {
                     )}
                   />
 
-                  {isLoading ? (
+                  {isLoading?.event === "submit" && isLoading.load ? (
                     <Button type="submit" className="w-full" disabled>
                       <Spinner />
                       <span>Submit...</span>
+                    </Button>
+                  ) : isLoading.event === "resent" ? (
+                    <Button type="submit" className="w-full" disabled>
+                      Submit
                     </Button>
                   ) : (
                     <Button type="submit" className="w-full">
@@ -186,22 +203,32 @@ function OtpDialogPass({ email }: { email: string }) {
             You can resend OTP in <strong>{formatTime(timeLeft)}</strong>
           </p>
         )}
-
-        {hasGuessed === false && (
-          <Badge variant={"destructive"}>Invalid code. Please try again.</Badge>
+        {isLoading?.event === "resent" && isLoading.load ? (
+          <Button className="w-full" variant={"outline"} disabled>
+            <Spinner />
+            <span>Resent code...</span>
+          </Button>
+        ) : isLoading.event === "google" ? (
+          <Button className="w-full" variant={"outline"} disabled>
+            Resent code
+          </Button>
+        ) : (
+          <Button
+            variant={"outline"}
+            className="sm:w-[300px] w-full"
+            disabled={!canResend}
+            onClick={async () => {
+              setIsLoading({ load: true, event: "resent" });
+              await useSendCode(email);
+              setIsLoading({ load: false, event: "" });
+              setOtpValue("");
+              setPassword("");
+              handleResend();
+            }}
+          >
+            Resent code
+          </Button>
         )}
-
-        <Button
-          variant={"default"}
-          className="sm:w-[300px] w-full"
-          disabled={!canResend}
-          onClick={async () => {
-            await useSendCode(email);
-            handleResend();
-          }}
-        >
-          Resend code
-        </Button>
       </CardFooter>
     </Card>
   );

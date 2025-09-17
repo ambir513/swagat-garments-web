@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,10 +17,7 @@ import { Input } from "@/components/ui/input";
 import Social from "./Social";
 import { useState } from "react";
 import OtpDialog from "./OtpDialog";
-import { Eye } from "lucide-react";
 import Spinner from "@/components/ui/spinner";
-import axios from "axios";
-import toast from "react-hot-toast";
 import useSign from "../hooks/useSign";
 
 const RegisterForm = () => {
@@ -59,6 +55,7 @@ const RegisterForm = () => {
         description="Welcome! Please fill in the details to get started."
         footerLabel="Already have an account? "
         href="/auth/login"
+        isForPass={false}
         linkLabel="Login"
       >
         <main className="flex flex-col gap-y-3">
