@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
+import toast from "react-hot-toast";
 import { FaGoogle } from "react-icons/fa";
 
 const Social = ({
@@ -12,6 +13,14 @@ const Social = ({
   return (
     <Button
       variant={"outline"}
+      onClick={() =>
+        toast(
+          "Google service is temporarily unavailable. Please try again later.",
+          {
+            duration: 5000,
+          }
+        )
+      }
       className="flex gap-x-2 items-center w-full"
       disabled={disabled && true}
     >
