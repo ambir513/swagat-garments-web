@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import Social from "./Social";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import OtpDialog from "./OtpDialog";
 import Spinner from "@/components/ui/spinner";
 import useSign from "../hooks/useSign";
@@ -23,7 +23,13 @@ import useSign from "../hooks/useSign";
 const RegisterForm = () => {
   const { signUp } = useSign();
   const [isOpen, setIsOpen] = useState(false);
-  const [data, setData] = useState({});
+  const emailFocus = useRef<HTMLInputElement>(null);
+  const [inputData, setInputData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
   const [show, setShow] = useState(false);
   const [isLoading, setIsLoading] = useState({ load: false, event: "" });
   const RegisterForm = useForm<z.infer<typeof RegisterFormSchema>>({
@@ -36,17 +42,18 @@ const RegisterForm = () => {
     },
   });
   async function onSubmit(values: z.infer<typeof RegisterFormSchema>) {
-    setData({ ...values });
     setIsLoading({ load: true, event: "register" });
-    const response = await signUp(values);
+    const response = await signUp(inputData);
     if (response) {
       setIsOpen(true);
     } else {
+      setInputData((prev) => ({ ...prev, email: "", password: "" }));
+      emailFocus.current?.focus();
       setIsLoading({ load: false, event: "" });
     }
   }
   if (isOpen) {
-    return <OtpDialog data={data} />;
+    return <OtpDialog data={inputData} />;
   }
   return (
     <div className="max-w-lg m-4">
@@ -72,7 +79,18 @@ const RegisterForm = () => {
                     <FormItem>
                       <FormLabel>First name</FormLabel>
                       <FormControl>
-                        <Input placeholder="John" {...field} />
+                        <Input
+                          placeholder="John"
+                          {...field}
+                          value={inputData.firstName.trim()}
+                          onChange={(e) => {
+                            setInputData((prev) => ({
+                              ...prev,
+                              firstName: e.target.value,
+                            }));
+                            field.onChange(e.target.value.trim());
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -85,7 +103,18 @@ const RegisterForm = () => {
                     <FormItem>
                       <FormLabel>Last name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Doe" {...field} />
+                        <Input
+                          placeholder="Doe"
+                          {...field}
+                          value={inputData.lastName.trim()}
+                          onChange={(e) => {
+                            setInputData((prev) => ({
+                              ...prev,
+                              lastName: e.target.value,
+                            }));
+                            field.onChange(e.target.value.trim());
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -99,7 +128,19 @@ const RegisterForm = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="john.doe@gmail.com" {...field} />
+                      <Input
+                        placeholder="john.doe@gmail.com"
+                        {...field}
+                        ref={emailFocus}
+                        value={inputData.email.trim()}
+                        onChange={(e) => {
+                          setInputData((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }));
+                          field.onChange(e.target.value.trim());
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -116,6 +157,14 @@ const RegisterForm = () => {
                         type={show ? "text" : "password"}
                         placeholder="XXXXXXXXXX"
                         {...field}
+                        value={inputData.password.trim()}
+                        onChange={(e) => {
+                          setInputData((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }));
+                          field.onChange(e.target.value.trim());
+                        }}
                         onBlur={() => setShow((prev) => !prev)}
                         onFocus={() => setShow((prev) => !prev)}
                       />

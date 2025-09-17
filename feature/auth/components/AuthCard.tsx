@@ -40,10 +40,10 @@ const AuthCard = ({
       <CardFooter className="flex flex-col">
         <Separator />
         <p className="text-sm text-muted-foreground mt-4">
-          {footerLabel}
+          {footerLabel}{" "}
           <Link
             href={href}
-            className="underline text-neutral-900"
+            className="underline text-primary"
             prefetch={false}
           >
             {linkLabel}
@@ -54,7 +54,7 @@ const AuthCard = ({
               <Link
                 href={"/auth/forgot-password"}
                 prefetch={false}
-                className="underline text-neutral-900"
+                className="underline text-primary"
               >
                 Reset Password
               </Link>

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import Social from "./Social";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Spinner from "@/components/ui/spinner";
 import useSign from "../hooks/useSign";
 import useLogin from "../hooks/useLogin";
@@ -25,7 +25,13 @@ import Link from "next/link";
 const LoginForm = () => {
   const { login } = useLogin();
   const [isLoading, setIsLoading] = useState({ load: false, event: "" });
+  const emailFocus = useRef<HTMLInputElement>(null);
+
   const [show, setShow] = useState(false);
+  const [inputData, setInputData] = useState({
+    email: "",
+    password: "",
+  });
   const Route = useRouter();
   const LoginForm = useForm<z.infer<typeof LoginFormSchema>>({
     resolver: zodResolver(LoginFormSchema),
@@ -35,10 +41,14 @@ const LoginForm = () => {
     },
   });
   async function onSubmit(values: z.infer<typeof LoginFormSchema>) {
-    const response = await login(values);
+    const response = await login(inputData);
 
     if (response) {
       Route.push("/");
+    } else {
+      setIsLoading({ load: false, event: "" });
+      setInputData((prev) => ({ email: "", password: "" }));
+      emailFocus.current?.focus();
     }
     console.log(values);
   }
@@ -66,7 +76,19 @@ const LoginForm = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="john.doe@gmail.com" {...field} />
+                      <Input
+                        placeholder="john.doe@gmail.com"
+                        {...field}
+                        ref={emailFocus}
+                        value={inputData.email.trim()}
+                        onChange={(e) => {
+                          setInputData((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }));
+                          field.onChange(e.target.value.trim());
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -83,6 +105,14 @@ const LoginForm = () => {
                         type={show ? "text" : "password"}
                         placeholder="XXXXXXXXXX"
                         {...field}
+                        value={inputData.password.trim()}
+                        onChange={(e) => {
+                          setInputData((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }));
+                          field.onChange(e.target.value.trim());
+                        }}
                         onBlur={() => setShow((prev) => !prev)}
                         onFocus={() => setShow((prev) => !prev)}
                       />
